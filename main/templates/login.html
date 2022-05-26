@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title> Login </title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+    <body>
+    <h1>Welcome to Super Smart APP</h1>
+    </br></br></br></br>
+        <div align="center">
+             <div class="header">
+                <h1>Login</h1>
+             </div>
+            <div class="msg">{{ msg }}</div>
+            <h2 class="word">
+                <!--form action="{{ url_for('main.login') }}" method="post"-->
+                <form action="" method="post">
+                  <!--div class="msg">{{ msg }}</div-->
+                    <input id="email" name="email" type="text" placeholder="Enter Email" class="textbox"/></br></br>
+                    <input id="password" name="password" type="password" placeholder="Enter Password" class="textbox"/></br></br>
+                    <input type="submit" class="btn" value="Log Me In"></br></br>
+                </form>
+            </h2>
+            <p align="center" class="bottom">New User?  <a class="bottom" href="{{url_for('main.register')}}"> SignUp here</a></p>
+          <!--/div-->
+        </div>
+    </body>
+</html>

@@ -1,0 +1,106 @@
+pipeline {
+  agent {
+    label 'built-in'
+  }
+  environment {
+    registry = "kss7/my-smart-app"
+    img = "$registry" + ":${env.BUILD_ID}"
+    registryCredential = 'docker-hub-login' //withRegistry needs just credentialsId so give like this
+    mailRecipients = "abcd@myyahoo.com, kss0101@mymail.com"
+    jobName = "${currentBuild.fullDisplayName}"
+  }
+  // options {
+  //skipDefaultCheckout() //this option will Skip checking out code by default in all agents
+  //}
+  stages {
+    stage('Checkout') {
+      steps {
+        echo "Check code is downloaded"
+        //git branch: 'main', url: 'https://github.com/kss7/CopyDelete1.git'
+        sh 'ls -la'
+      }
+    }
+    stage('Test, Coverage, Static Analysis, Report') {
+      parallel {
+        stage('Test & Coverage') {
+          agent {
+            docker {
+              image 'python:3.10-slim-buster'
+            }
+          }
+          steps {
+            echo " Testing And Code Coverage"
+            sh 'ls -la'
+            sh 'pwd'
+            sh returnStatus: true, script: 'bash ./jenkinsscript5.sh'
+          }
+          post {
+            always {
+              echo "PostStage: Publish Test Report"
+              junit skipMarkingBuildUnstable: true, testResults: 'xmlReport/output.xml'
+              cleanWs()
+
+            }
+          }
+        }
+        stage('StaticAnalysis') {
+          agent {
+            dockerfile {
+              filename 'Dockerfile_pyagent'
+            }
+          }
+          steps {
+            echo "Doing Static Analysis"
+            sh 'id'
+            sh 'ls -la'
+            //sh 'pip install flake8'
+            sh returnStatus: true, script: 'flake8 main/ utests/ > flake8out.text'
+          }
+          post {
+            always {
+              echo "PostStage: Publish Static Analysis"
+              recordIssues enabledForFailure: true, tool: flake8(pattern: '*.text')
+              cleanWs()
+            }
+          }
+        }
+      }
+    }
+    stage('Build Img') {
+      steps {
+        script {
+          echo "Build docker image"
+          println("${img}")
+          // dockerImg = docker.build("${img}")
+        }
+      }
+    }
+    stage('Release') {
+      steps {
+        script {
+          echo "Push to docker hub"
+          //docker.withRegistry( 'https://registry.hub.docker.com ', registryCredential )  {
+          //		dockerImg.push()
+          //		dockerImg.push('latest') //one more push for latest tag
+          //	}
+        }
+      }
+    }
+  }
+  post {
+    always {
+      echo "POST stage: Sending Mail"
+      emailext body: 'Pls go to ${BUILD_URL} and verify!',
+        mimeType: 'text/html',
+        subject: "[Jenkins] ${jobName} - ${currentBuild.currentResult}",
+        to: "${mailRecipients}",
+        from: "Jenkins",
+        replyTo: "${mailRecipients}",
+        attachLog: true
+
+    }
+    cleanup {
+      cleanWs()
+    }
+  }
+}

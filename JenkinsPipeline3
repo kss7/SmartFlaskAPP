@@ -1,0 +1,72 @@
+pipeline {
+	   agent { label 'agentlinux' } //using agent ubuntu18
+
+    environment {
+        registry = "kss7/my-smart-app"
+        img = "$registry" + ":${env.BUILD_ID}"
+        registryCredential = 'docker-hub-login' //withRegistry needs just credentialsId so give like this
+    }
+
+    stages {
+        stage('checkout') {
+            steps {
+                git branch: 'main', credentialsId: 'jenkins-github-ssh', url: 'git@github.com:kss7/SmartFlaskAPP.git' //generated in Snippet Generator
+                sh 'ls -la'
+            }
+        }
+		stage('Unit Tests') {
+           steps {
+				echo "Unit Tests"
+				//sh('chmod +x ./jenkinsscript.sh')
+				sh('bash ./jenkinsscript.sh') //updated script
+          }
+		  post { //Post section within stage
+			success {
+				echo "Post Stage- Publish Junit"
+				junit skipMarkingBuildUnstable: true, testResults: 'xmlReport/output.xml'
+			}
+		  }
+        }
+        stage('Build') {
+            steps {
+                script {
+                    println ("${img}")
+                    dockerImg = docker.build("${img}")
+                }
+            }
+        }
+        stage('Push to Hub') {
+            steps{
+                script {
+                    docker.withRegistry( 'https://registry.hub.docker.com ', registryCredential )  {
+							dockerImg.push()
+							//dockerImg.push('latest') //one more push for latest tag
+							}
+                    }
+            }
+        }
+		stage('Deploy Run') {
+			steps {
+					script {
+						sh returnStatus: true, script: 'docker stop $(docker ps -a | grep ${JOB_NAME} | awk \'{print $1}\')'
+						cont = docker.image("${img}").run('--rm -d --name ${JOB_NAME} -p 5000:5000')
+					}
+			}
+		}
+    }
+	post {
+		always {
+			echo "In POST stage"
+			script {
+				if ((currentBuild.currentResult != "FAILURE") && cont) {
+					sh returnStatus:true, script: ('docker rmi $(docker images --filter "before=${img}" | grep ${registry} | awk \'{print $3}\') --force')
+				} else if (currentBuild.previousSuccessfulBuild) {
+					prevImg = "$registry" + ":${currentBuild.previousSuccessfulBuild.number}"
+					sh("docker run --rm -d --name ${JOB_NAME} -p 5000:5000 ${prevImg}")
+				}
+
+			}
+		}
+
+	}
+}

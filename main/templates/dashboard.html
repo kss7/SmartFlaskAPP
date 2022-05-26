@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title> Dashboard </title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+   <body>
+    <h1>Welcome to Super Smart APP</h1>
+    </br></br></br>
+     <div align="center">
+            <h2>Hi, {{ current_user.email }}</h2>
+              <div class="wrapper">
+                  <div class="table">
+                    <div class="row header blue">
+                      <div class="cell">ID</div>
+                      <div class="cell">Email</div>
+                      <div class="cell">Registered Date</div>
+                    </div>
+                    {% for row in rows %}
+                        <div class="row">
+                          <div class="cell" data-title="Id">{{row["id"]}}</div>
+                          <div class="cell" data-title="Email">{{row["email"]}}</div>
+                          <div class="cell" data-title="Registered">{{row["registered_on"]}}</div>
+                        </div>
+                     {% endfor %}
+                  </div>
+                  </div>
+            <br><br>
+         </div>
+           <p align="center" class="bottom"><a href="{{ url_for('main.logout')}}">Logout Here</a></p>
+             <!--p align="center" class="bottom"> <a href = "/">Go back to Home page</a> </p-->
+   </body>
+</html>
