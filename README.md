@@ -18,6 +18,6 @@ Use pytest to execute unit-tests
 pytest --cov=main --junitxml=./xmlReport/output.xml
 python -m coverage xml
 
-## Notes:
+### Notes:
 SQLlite DB in instance folder
 If you clean the whole DB, you'll need to register a user first to login.
